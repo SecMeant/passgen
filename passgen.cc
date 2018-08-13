@@ -6,6 +6,8 @@
 
 using namespace std::literals;
 
+const char * const def_charrange = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890";
+
 inline void usage(const char *programname)
 {std::cout << "Usage: " << programname << " <password-chars-pool> <password-length>\n";}
 
@@ -33,7 +35,7 @@ int main(int argc, char**argv)
 	}
 	else
 	{
-		availChars = argv[1];
+		*argv[1] == '?' ? availChars = def_charrange: availChars = argv[1];
 		passwdLength = sstoi(std::string(argv[2]));
 
 		std::cout << "Generating new password.\n";
