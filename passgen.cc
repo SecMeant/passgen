@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iterator>
 #include <algorithm>
+#include <cstring>
 #include <cctype>
 
 using namespace std::literals;
@@ -37,10 +38,6 @@ int main(int argc, char**argv)
 	{
 		*argv[1] == '?' ? availChars = def_charrange: availChars = argv[1];
 		passwdLength = sstoi(std::string(argv[2]));
-
-		std::cout << "Generating new password.\n";
-		std::cout << "Available chars: " << availChars << '\n';
-		std::cout << "Password length: " << passwdLength << "\n\n";
 	}
 
 	furandom.open("/dev/urandom", std::ios::binary | std::ios::in);
