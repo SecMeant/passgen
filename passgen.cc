@@ -5,9 +5,41 @@
 #include <cstring>
 #include <cctype>
 
+#ifdef _WIN32
+#include <time.h>
+#endif
+
 using namespace std::literals;
 
 const char * const def_charrange = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890";
+
+namespace RandomGenerator
+{
+	#ifndef _WIN32
+	static std::ifstream furandom;
+	#endif
+
+	void initRandomGeneretor()
+	{
+		#ifdef _WIN32
+		srand(time(NULL));
+		#else
+		if (not furandom.is_open() )
+			furandom.open("/dev/urandom", std::ios::binary | std::ios::in);
+		else
+			throw "Random generator is already initilized!";
+		#endif
+	}
+
+	unsigned char getRandomChar()
+	{
+		#ifdef _WIN32
+		return rand()%255;
+		#else
+		return static_cast<unsigned char>(furandom.get()%255);
+		#endif
+	}
+}
 
 inline void usage(const char *programname)
 {std::cout << "Usage: " << programname << " <password-chars-pool> <password-length>\n";}
@@ -24,12 +56,11 @@ int sstoi(const std::string& str)
 
 int main(int argc, char**argv)
 {
-	std::ifstream furandom;
 	std::string passwd;
 	std::string availChars;
 	int32_t passwdLength;
 
-	if (argc < 3)
+	if (argc < 2)
 	{	
 		usage(argv[0]);
 		return 1;
@@ -40,11 +71,11 @@ int main(int argc, char**argv)
 		passwdLength = sstoi(std::string(argv[2]));
 	}
 
-	furandom.open("/dev/urandom", std::ios::binary | std::ios::in);
+	RandomGenerator::initRandomGeneretor();
 
 	for(auto i=0; i < passwdLength;)
 	{
-		unsigned char ch = furandom.get();
+		unsigned char ch = RandomGenerator::getRandomChar();
 		if (availChars.find(ch) != std::string::npos)
 		{
 			std::cout << ch;
