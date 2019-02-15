@@ -60,7 +60,7 @@ int main(int argc, char**argv)
 	std::string availChars;
 	int32_t passwdLength;
 
-	if (argc < 2)
+	if (argc <= 2)
 	{	
 		usage(argv[0]);
 		return 1;
