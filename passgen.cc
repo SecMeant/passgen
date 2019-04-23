@@ -1,45 +1,70 @@
 #include <iostream>
 #include <fstream>
-#include <iterator>
-#include <algorithm>
-#include <cstring>
-#include <cctype>
 
 #ifdef _WIN32
-#include <time.h>
+	#define _CRT_RAND_S
+	#include <stdlib.h>
 #endif
 
 using namespace std::literals;
 
-const char * const def_charrange = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890";
-
-namespace RandomGenerator
+class RandomGenerator
 {
-	#ifndef _WIN32
-	static std::ifstream furandom;
+	using random_value_t = unsigned int;
+
+	const std::string char_pool;
+
+	#ifdef __linux__
+	std::ifstream furandom;
 	#endif
 
-	void initRandomGeneretor()
+	void initRandomDevice()
 	{
-		#ifdef _WIN32
-		srand(time(NULL));
-		#else
-		if (not furandom.is_open() )
-			furandom.open("/dev/urandom", std::ios::binary | std::ios::in);
-		else
-			throw "Random generator is already initilized!";
+		#ifdef __linux__
+			if (not furandom.is_open())
+				furandom.open("/dev/urandom", std::ios::binary | std::ios::in);
+			else
+				throw std::runtime_error("Random generator is already initilized!");
 		#endif
 	}
+
+	random_value_t getRandomValue()
+	{
+		random_value_t random_value;
+
+		#ifdef _WIN32
+		rand_s(&random_value);
+
+		if(!random_value)
+			throw std::runtime_error("System random number generator failed to generate value.");
+		
+		return random_value;
+		#else
+
+		this->furandom.read(reinterpret_cast<char *>(&random_value), sizeof(random_value));
+		return random_value;
+
+		#endif
+	}
+
+public:
+
+	template <class T>
+	RandomGenerator(T&& char_pool)
+	: char_pool{std::forward<T>(char_pool)}
+	{
+		this->initRandomDevice();
+	}
+
+	RandomGenerator() = delete;
+	RandomGenerator& operator=(RandomGenerator&&) = delete;
+	RandomGenerator& operator=(const RandomGenerator&) = delete;
 
 	unsigned char getRandomChar()
 	{
-		#ifdef _WIN32
-		return rand()%255;
-		#else
-		return static_cast<unsigned char>(furandom.get()%255);
-		#endif
+		return this->char_pool[this->getRandomValue()%this->char_pool.size()];
 	}
-}
+};
 
 inline void usage(const char *programname)
 {std::cout << "Usage: " << programname << " <password-chars-pool> <password-length>\n";}
@@ -54,8 +79,13 @@ int sstoi(const std::string& str)
 	return std::stoi(str);
 }
 
+template<typename T, std::size_t N>
+std::size_t array_length(const T array[N])
+{return N;}
+
 int main(int argc, char**argv)
 {
+	const char * def_charpool = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890";
 	std::string passwd;
 	std::string availChars;
 	int32_t passwdLength;
@@ -67,22 +97,22 @@ int main(int argc, char**argv)
 	}
 	else
 	{
-		*argv[1] == '?' ? availChars = def_charrange: availChars = argv[1];
+		if(*argv[1] == '?')
+			availChars = def_charpool;
+		else
+			availChars = argv[1];
+
 		passwdLength = sstoi(std::string(argv[2]));
 	}
 
-	RandomGenerator::initRandomGeneretor();
+	RandomGenerator random_generator(availChars);
 
-	for(auto i=0; i < passwdLength;)
+	for(auto i=0; i < passwdLength; ++i)
 	{
-		unsigned char ch = RandomGenerator::getRandomChar();
-		if (availChars.find(ch) != std::string::npos)
-		{
-			std::cout << ch;
-			i++;
-		}
+		unsigned char ch = random_generator.getRandomChar();
+		putchar(ch);
 	}
-	std::cout << "\n";
+	putchar('\n');
 
 	return 0;
 }
